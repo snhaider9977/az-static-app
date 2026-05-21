@@ -2,11 +2,7 @@ trigger:
 - main
 
 variables:
-- name: deployment_token
-  value: "b663a82229e1d853105efa9614d872abd0f373c807cdf03092bde3ddfb78373c07-9ba6dc73-8b41-40cd-bebc-aa4383540f7e00f26130a8c4080f"
-
-- name: REACT_APP_ENV
-  value: 'dev'
+- group: static-var
 
 steps:
 
