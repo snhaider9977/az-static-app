@@ -5,22 +5,42 @@ variables:
 - name: deployment_token
   value: "b663a82229e1d853105efa9614d872abd0f373c807cdf03092bde3ddfb78373c07-9ba6dc73-8b41-40cd-bebc-aa4383540f7e00f26130a8c4080f"
 
-
-
-pool:
-  vmImage: 'ubuntu-latest'
+- name: REACT_APP_ENV
+  value: 'dev'
 
 steps:
-- task: NodeTool@0
+
+# Install Node.js
+- task: UseNode@1
   inputs:
-    versionSpec: '16.x'
+    version: '18.x'
   displayName: 'Install Node.js'
 
+# Verify Node and NPM versions
+- script: |
+    node -v
+    npm -v
+  displayName: 'Check Node and NPM versions'
+
+# Install dependencies
 - script: |
     npm install
-    npm run build
-  displayName: 'Install dependencies and build'
+  displayName: 'Install dependencies'
 
+# Build React application
+- script: |
+    npm run build
+  displayName: 'Build React application'
+  env:
+    REACT_APP_ENV: $(REACT_APP_ENV)
+
+# Optional - show build folder contents
+- script: |
+    ls -la
+    ls -la build
+  displayName: 'Verify build output'
+
+# Deploy to Azure Static Web Apps
 - task: AzureStaticWebApp@0
   inputs:
     app_location: '/'
@@ -28,8 +48,4 @@ steps:
     output_location: 'build'
     sku: 'Free'
     azure_static_web_apps_api_token: '$(deployment_token)'
-  displayName: 'Deploy to Azure Static Web Apps'
-
-# Notes:
-# - Create a pipeline variable named `deployment_token` (secret) with the Azure Static Web Apps deployment token.
-# - The task AzureStaticWebApp@0 requires the Azure DevOps extension for Static Web Apps (installable from the marketplace).
+  displayName: 'Deploy to Azure Static Web App'
