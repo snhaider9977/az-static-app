@@ -1,0 +1,29 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '16.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    npm install
+    npm run build
+  displayName: 'Install dependencies and build'
+
+- task: AzureStaticWebApp@0
+  inputs:
+    app_location: '/'
+    api_location: ''
+    output_location: 'build'
+    sku: 'Free'
+    azure_static_web_apps_api_token: '$(deployment_token)'
+  displayName: 'Deploy to Azure Static Web Apps'
+
+# Notes:
+# - Create a pipeline variable named `deployment_token` (secret) with the Azure Static Web Apps deployment token.
+# - The task AzureStaticWebApp@0 requires the Azure DevOps extension for Static Web Apps (installable from the marketplace).
