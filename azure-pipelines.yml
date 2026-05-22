@@ -1,47 +1,63 @@
 trigger:
-- main
+  branches:
+    include:
+      - dev
+      - main
+
+  paths:
+    include:
+      - frontend/**
+      - azure-pipeline/frontend-pipeline.yml
 
 variables:
-- group: static-var
+  - group: static-var
 
-steps:
+stages:
+  - stage: BuildDev
+    displayName: Build DEV Frontend
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/dev')
 
-# Install Node.js
-- task: UseNode@1
-  inputs:
-    version: '18.x'
-  displayName: 'Install Node.js'
+    jobs:
+      - job: Build
+        displayName: Build and Deploy Job
 
-# Verify Node and NPM versions
-- script: |
-    node -v
-    npm -v
-  displayName: 'Check Node and NPM versions'
+        pool:
+          vmImage: ubuntu-latest
 
-# Install dependencies
-- script: |
-    npm install
-  displayName: 'Install dependencies'
+        steps:
+          - task: UseNode@1
+            inputs:
+              version: '18.x'
+            displayName: Install Node.js
 
-# Build React application
-- script: |
-    npm run build
-  displayName: 'Build React application'
-  env:
-    REACT_APP_ENV: $(REACT_APP_ENV)
+          - script: |
+              node -v
+              npm -v
+            displayName: Check Node and NPM versions
 
-# Optional - show build folder contents
-- script: |
-    ls -la
-    ls -la build
-  displayName: 'Verify build output'
+          - script: |
+              cd frontend
+              npm install
+            displayName: Install dependencies
 
-# Deploy to Azure Static Web Apps
-- task: AzureStaticWebApp@0
-  inputs:
-    app_location: '/'
-    api_location: ''
-    output_location: 'build'
-    sku: 'Free'
-    azure_static_web_apps_api_token: '$(deployment_token)'
-  displayName: 'Deploy to Azure Static Web App'
+          - script: |
+              cd frontend
+              npm run build
+            displayName: Build React application
+            env:
+              REACT_APP_ENV: $(REACT_APP_ENV)
+
+          - script: |
+              ls -la frontend
+              ls -la frontend/dist
+            displayName: Verify build output
+
+          - task: AzureStaticWebApp@0
+            displayName: Deploy to Azure Static Web App
+            inputs:
+              app_location: 'frontend'
+              api_location: ''
+              output_location: 'dist'
+              skip_app_build: true
+              sku: 'Free'
+              azure_static_web_apps_api_token: $(deployment_token)
