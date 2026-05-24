@@ -13,13 +13,16 @@ variables:
   - group: static-var
 
 stages:
-  - stage: BuildDev
-    displayName: Build DEV Frontend
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/dev')
+
+# =====================================
+# BUILD STAGE
+# =====================================
+  - stage: Build
+    displayName: Build Frontend
 
     jobs:
-      - job: Build
-        displayName: Build and Deploy Job
+      - job: BuildJob
+        displayName: Build React App
 
         pool:
           vmImage: ubuntu-latest
@@ -31,11 +34,6 @@ stages:
             displayName: Install Node.js
 
           - script: |
-              node -v
-              npm -v
-            displayName: Check Node and NPM versions
-
-          - script: |
               cd frontend
               npm install
             displayName: Install dependencies
@@ -45,19 +43,45 @@ stages:
               npm run build
             displayName: Build React application
             env:
-              REACT_APP_ENV: $(REACT_APP_ENV)
+              REACT_APP_ENV: $(REACT-APP-ENV)
+
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Frontend Artifact
+            inputs:
+              PathtoPublish: 'frontend/dist'
+              ArtifactName: 'frontend-dist'
+              publishLocation: 'Container'
+
+# =====================================
+# DEV DEPLOYMENT
+# =====================================
+  - stage: DeployDev
+    displayName: Deploy DEV Frontend
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/dev'))
+
+    jobs:
+      - job: DeployDevJob
+        displayName: Deploy DEV Job
+
+        pool:
+          vmImage: ubuntu-latest
+
+        steps:
+          - task: DownloadBuildArtifacts@0
+            displayName: Download Frontend Artifact
+            inputs:
+              buildType: current
+              downloadType: single
+              artifactName: frontend-dist
+              downloadPath: $(System.ArtifactsDirectory)
 
           - script: |
-              ls -la frontend
-              ls -la frontend/dist
-            displayName: Verify build output
+              npm install -g @azure/static-web-apps-cli
 
-          - task: AzureStaticWebApp@0
-            displayName: Deploy to Azure Static Web App
-            inputs:
-              app_location: 'frontend'
-              api_location: ''
-              output_location: 'dist'
-              skip_app_build: true
-              sku: 'Free'
-              azure_static_web_apps_api_token: $(deployment_token)
+              ls -R /home/vsts/work/1/a
+
+              swa deploy "/home/vsts/work/1/a/frontend-dist" \
+                --deployment-token $(token) \
+                --env production
+            displayName: Deploy DEV using SWA CLI
