@@ -10,10 +10,8 @@ TODO: Guide users through getting your code up and running on their own system. 
 5.	git config --global user.name "shahid haider"
 6.  git config --global user.email "snhaider9977@gmail.com"
 7.  git config --global credential.helper manager
-
-
-git clone
-cd folder
+8. git clone
+9. cd folder
 git branch -a
 git checkout dev
 git add .
